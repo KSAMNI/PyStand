@@ -4,6 +4,7 @@ on:
   push:
   pull_request:
     types: [ opened, synchronize, reopened, ready_for_review ]
+  workflow_dispatch:   # 添加手动触发
 
 env:
   BUILD_TYPE: Release
