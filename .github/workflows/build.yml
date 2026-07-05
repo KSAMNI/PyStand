@@ -11,11 +11,8 @@ env:
 
 jobs:
   build-msvc:
-    if: >-
-      github.event.pull_request.draft == false
-
+    if: github.event.pull_request.draft == false
     runs-on: windows-latest
-
     strategy:
       fail-fast: false
       matrix:
@@ -23,28 +20,30 @@ jobs:
         subsystem: [ GUI, CLI ]
         include:
           - generator: Visual Studio 17 2022
-
+  
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Configure
-      run: >
-        cmake
-        -G "${{ matrix.generator }}"
-        -A ${{ matrix.arch }}
-        -B build
-        ${{ matrix.subsystem == 'GUI' && '-DPYSTAND_CONSOLE=OFF' || '-DPYSTAND_CONSOLE=ON' }}
-
-    - name: Build
-      run: |
-        cmake --build build --config ${{ env.BUILD_TYPE }}
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: PyStand-${{ matrix.arch }}-${{ matrix.subsystem }}
-        path: build/${{ env.BUILD_TYPE }}
+      - name: Checkout
+        uses: actions/checkout@v4
+  
+      - name: Configure
+        run: |
+          $vsPath = & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -version 17 -property installationPath
+          if (-not $vsPath) {
+            Write-Error "Visual Studio 2022 not found"
+            exit 1
+          }
+          cmake -G "${{ matrix.generator }}" -A ${{ matrix.arch }} -B build `
+            -DCMAKE_GENERATOR_INSTANCE="$vsPath" `
+            ${{ matrix.subsystem == 'GUI' && '-DPYSTAND_CONSOLE=OFF' || '-DPYSTAND_CONSOLE=ON' }}
+  
+      - name: Build
+        run: cmake --build build --config ${{ env.BUILD_TYPE }}
+  
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: PyStand-${{ matrix.arch }}-${{ matrix.subsystem }}
+          path: build/${{ env.BUILD_TYPE }}
 
   build-gcc:
     if: >-
