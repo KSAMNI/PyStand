@@ -18,34 +18,28 @@ jobs:
       matrix:
         arch: [ Win32, x64 ]
         subsystem: [ GUI, CLI ]
-        include:
-          - generator: Visual Studio 17 2022
   
     steps:
       - name: Checkout
         uses: actions/checkout@v4
   
-      # 关键步骤：设置 MSVC 开发环境
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: ${{ matrix.arch == 'x64' && 'x64' || 'x86' }}
-          # 对于 Win32 使用 x86，对于 x64 使用 x64
-          # 如果还需要 32位工具链，可以指定 'x86'，但注意 Win32 是目标架构，主机架构为 x86
   
       - name: Configure
         run: >
           cmake
-          -G "${{ matrix.generator }}"
-          -A ${{ matrix.arch }}
+          -G "Ninja"
           -B build
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
           ${{ matrix.subsystem == 'GUI' && '-DPYSTAND_CONSOLE=OFF' || '-DPYSTAND_CONSOLE=ON' }}
   
       - name: Build
         run: cmake --build build --config ${{ env.BUILD_TYPE }}
   
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
         with:
           name: PyStand-${{ matrix.arch }}-${{ matrix.subsystem }}
           path: build/${{ env.BUILD_TYPE }}
